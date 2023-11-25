@@ -20,7 +20,7 @@ def create_ui():
 
     shared.gradio['Chat input'] = gr.State()
     shared.gradio['dummy'] = gr.State()
-    shared.gradio['history'] = gr.State({'internal': [], 'visible': []})
+    shared.gradio['history'] = gr.State({'path': "", 'internal': [], 'visible': []})
 
     with gr.Tab('Chat', elem_id='chat-tab', elem_classes=("old-ui" if shared.args.chat_buttons else None)):
         with gr.Row():

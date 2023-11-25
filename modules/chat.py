@@ -396,6 +396,7 @@ def redraw_html(history, name1, name2, mode, style, reset_cache=False):
 
 def start_new_chat(state):
     mode = state['mode']
+    unique_id = datetime.now().strftime('%Y%m%d-%H-%M-%S')
     history = {'internal': [], 'visible': []}
 
     if mode != 'instruct':
@@ -404,8 +405,10 @@ def start_new_chat(state):
             history['internal'] += [['<|BEGIN-VISIBLE-CHAT|>', greeting]]
             history['visible'] += [['', apply_extensions('output', greeting, state, is_chat=True)]]
 
-    unique_id = datetime.now().strftime('%Y%m%d-%H-%M-%S')
     save_history(history, unique_id, state['character_menu'], state['mode'])
+
+    history_file_path = get_history_file_path(unique_id, state['character_menu'], state['mode'])
+    history['path'] = str(history_file_path)
 
     return history
 
@@ -414,7 +417,7 @@ def get_history_file_path(unique_id, character, mode):
     if mode == 'instruct':
         p = Path(f'logs/instruct/{unique_id}.json')
     else:
-        p = Path(f'logs/chat/{character}/{unique_id}.json')
+        p = Path(f'logs/chat/{character}/{unique_id}/history.json')
 
     return p
 
@@ -435,11 +438,14 @@ def rename_history(old_id, new_id, character, mode):
     if shared.args.multi_user:
         return
 
-    old_p = get_history_file_path(old_id, character, mode)
-    new_p = get_history_file_path(new_id, character, mode)
-    if new_p.parent != old_p.parent:
-        logger.error(f"The following path is not allowed: {new_p}.")
-    elif new_p == old_p:
+    if mode == 'instruct':
+        old_p = get_history_file_path(old_id, character, mode)
+        new_p = get_history_file_path(new_id, character, mode)
+    else:
+        old_p = get_history_file_path(old_id, character, mode).parent
+        new_p = get_history_file_path(new_id, character, mode).parent
+        
+    if new_p == old_p:
         logger.info("The provided path is identical to the old one.")
     else:
         logger.info(f"Renaming {old_p} to {new_p}")
@@ -468,10 +474,13 @@ def find_all_histories(state):
             p.parent.mkdir(exist_ok=True)
             new_p.rename(p)
 
-        paths = Path(f'logs/chat/{character}').glob('*.json')
+        paths = Path(f'logs/chat/{character}').glob('**/history.json')
 
     histories = sorted(paths, key=lambda x: x.stat().st_mtime, reverse=True)
-    histories = [path.stem for path in histories]
+    if state['mode'] == 'instruct':
+        histories = [path.stem for path in histories]
+    else:
+        histories = [path.parent.name for path in histories]
 
     return histories
 
@@ -488,7 +497,7 @@ def load_latest_history(state):
     histories = find_all_histories(state)
 
     if len(histories) > 0:
-        unique_id = Path(histories[0]).stem
+        unique_id = histories[0]
         history = load_history(unique_id, state['character_menu'], state['mode'])
     else:
         history = start_new_chat(state)
@@ -508,6 +517,8 @@ def load_history(unique_id, character, mode):
             'visible': f['data_visible']
         }
 
+    history['path'] = str(p)
+
     return history
 
 
@@ -522,6 +533,8 @@ def load_history_json(file, history):
                 'internal': f['data'],
                 'visible': f['data_visible']
             }
+
+        history['path'] = str(Path(file))
 
         return history
     except:

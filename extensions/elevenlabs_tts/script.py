@@ -15,12 +15,12 @@ params = {
     'selected_voice': 'None',
     'autoplay': False,
     'show_text': True,
-    'model': 'eleven_monolingual_v1',
+    'model': 'eleven_multilingual_v2',
 }
 
 voices = None
 wav_idx = 0
-LANG_MODELS = ['eleven_monolingual_v1', 'eleven_multilingual_v1']
+LANG_MODELS = ['eleven_monolingual_v1', 'eleven_multilingual_v1', 'eleven_multilingual_v2']
 
 
 def update_api_key(key):
@@ -94,12 +94,12 @@ def history_modifier(history):
     return history
 
 
-def output_modifier(string):
+def output_modifier(string, state):
     global params, wav_idx
 
     if not params['activate']:
         return string
-
+    
     original_string = string
     string = remove_surrounded_chars(string)
     string = string.replace('"', '')
@@ -109,7 +109,21 @@ def output_modifier(string):
     if string == '':
         string = 'empty reply, try regenerating'
 
-    output_file = Path(f'extensions/elevenlabs_tts/outputs/{wav_idx:06d}.mp3'.format(wav_idx))
+    history_path = state['history']['path']
+    print(f'state_history_path = {history_path}')
+    output_dir = "file" / Path(history_path).parent / "outputs"
+    if not output_dir.is_dir():
+        output_dir.mkdir()     
+        
+    print(f'output_dir = {output_dir}')
+    files = list(Path(f'{output_dir}').glob('*.mp3'))
+    files.sort(key=lambda x: int(x.stem))
+
+    if len(files) > 0:
+        wav_idx = int(Path(files[-1]).stem) + 1
+
+    print(f'wav_idx = {wav_idx}')
+    output_file = Path(f'{output_dir}/{wav_idx:06d}.mp3'.format(wav_idx))
     print(f'Outputting audio to {str(output_file)}')
     try:
         audio = elevenlabs.generate(text=html.unescape(string), voice=params['selected_voice'], model=params['model'])
@@ -117,7 +131,7 @@ def output_modifier(string):
 
         autoplay = 'autoplay' if params['autoplay'] else ''
         string = f'<audio src="file/{output_file.as_posix()}" controls {autoplay}></audio>'
-        wav_idx += 1
+
     except elevenlabs.api.error.UnauthenticatedRateLimitError:
         string = "🤖 ElevenLabs Unauthenticated Rate Limit Reached - Please create an API key to continue\n\n"
     except elevenlabs.api.error.RateLimitError:

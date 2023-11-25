@@ -1,7 +1,7 @@
 /cache
 /characters
 /css
-/extensions
+/extensions/**/*.mp3
 /grammars
 /installer_files
 /logs
