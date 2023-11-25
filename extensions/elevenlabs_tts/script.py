@@ -1,5 +1,6 @@
 import html
 import re
+from os import getenv
 from pathlib import Path
 
 import elevenlabs
@@ -11,7 +12,7 @@ from modules.utils import gradio
 
 params = {
     'activate': True,
-    'api_key': None,
+    'api_key': getenv("ELEVENLABS_API_KEY") or None,
     'selected_voice': 'None',
     'autoplay': False,
     'show_text': True,
@@ -111,7 +112,7 @@ def output_modifier(string, state):
 
     history_path = state['history']['path']
     print(f'state_history_path = {history_path}')
-    output_dir = "file" / Path(history_path).parent / "outputs"
+    output_dir = Path(history_path).parent / "outputs"
     if not output_dir.is_dir():
         output_dir.mkdir()     
         
