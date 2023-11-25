@@ -46,7 +46,7 @@ def delete_file(fname):
         return
 
     if abs_path.exists():
-        abs_path.unlink()
+        abs_path.unlink() if abs_path.is_file() else abs_path.rmdir()
         logger.info(f'Deleted {fname}.')
 
 

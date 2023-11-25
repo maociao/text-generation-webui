@@ -41,6 +41,9 @@ def refresh_voices_dd():
     all_voices = refresh_voices()
     return gr.Dropdown.update(value=all_voices[0], choices=all_voices)
 
+def get_voice_from_history(unique_id, character, mode):
+    return None
+
 
 def remove_tts_from_history(history):
     for i, entry in enumerate(history['internal']):
@@ -73,6 +76,7 @@ def state_modifier(state):
         return state
 
     state['stream'] = False
+    state['voice'] = params['selected_voice']
     return state
 
 
@@ -149,14 +153,13 @@ def output_modifier(string, state):
 
 def ui():
     global voices
-    if not voices:
-        voices = refresh_voices()
-        selected = params['selected_voice']
-        if selected == 'None':
-            params['selected_voice'] = voices[0]
-        elif selected not in voices:
-            logger.error(f'Selected voice {selected} not available, switching to {voices[0]}')
-            params['selected_voice'] = voices[0]
+
+    with gr.Row():
+        if params['api_key']:
+            api_key = gr.Textbox(value=params['api_key'], label='API Key')
+            update_api_key(params['api_key'])
+        else:
+            api_key = gr.Textbox(placeholder="Enter your API key.", label='API Key')
 
     # Gradio elements
     with gr.Row():
@@ -165,15 +168,17 @@ def ui():
         show_text = gr.Checkbox(value=params['show_text'], label='Show message text under audio player')
 
     with gr.Row():
+        if not voices:
+            voices = refresh_voices()
+            selected = params['selected_voice']
+            if selected == 'None':
+                existing_voice = get_voice_from_history(gradio('unique_id'), gradio('character_menu'), gradio('mode'))
+                params['selected_voice'] = existing_voice or voices[0]
+            elif selected not in voices:
+                logger.error(f'Selected voice {selected} not available, switching to {voices[0]}')
+                params['selected_voice'] = voices[0]
         voice = gr.Dropdown(value=params['selected_voice'], choices=voices, label='TTS Voice')
         refresh = gr.Button(value='Refresh')
-
-    with gr.Row():
-        if params['api_key']:
-            api_key = gr.Textbox(value=params['api_key'], label='API Key')
-            update_api_key(params['api_key'])
-        else:
-            api_key = gr.Textbox(placeholder="Enter your API key.", label='API Key')
 
     with gr.Row():
         model = gr.Dropdown(value=params['model'], choices=LANG_MODELS, label='Language model')

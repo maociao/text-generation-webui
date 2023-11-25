@@ -474,6 +474,15 @@ def find_all_histories(state):
             p.parent.mkdir(exist_ok=True)
             new_p.rename(p)
 
+        # Handle new independent object model for characters
+        old_history = Path(f'logs/chat/{character}').glob('*.json')
+        for p in old_history:
+            unique_id = p.stem
+            new_p = get_history_file_path(unique_id, character, state['mode'])
+            logger.warning(f"Moving {p} to {new_p}")
+            new_p.parent.mkdir(exist_ok=True)
+            p.rename(new_p)
+
         paths = Path(f'logs/chat/{character}').glob('**/history.json')
 
     histories = sorted(paths, key=lambda x: x.stat().st_mtime, reverse=True)
@@ -543,7 +552,10 @@ def load_history_json(file, history):
 
 def delete_history(unique_id, character, mode):
     p = get_history_file_path(unique_id, character, mode)
-    delete_file(p)
+    if mode == 'instruct':
+        delete_file(p)
+    else:
+        delete_file(p.parent)
 
 
 def replace_character_names(text, name1, name2):

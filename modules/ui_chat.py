@@ -259,7 +259,8 @@ def create_event_handlers():
     shared.gradio['rename_to-confirm'].click(
         chat.rename_history, gradio('unique_id', 'rename_to', 'character_menu', 'mode'), None).then(
         lambda: [gr.update(visible=False)] * 3, None, gradio('rename_to', 'rename_to-confirm', 'rename_to-cancel'), show_progress=False).then(
-        lambda x, y: gr.update(choices=chat.find_all_histories(x), value=y), gradio('interface_state', 'rename_to'), gradio('unique_id'))
+        lambda x, y: gr.update(choices=chat.find_all_histories(x), value=y), gradio('interface_state', 'rename_to'), gradio('unique_id')).then(
+        chat.load_latest_history, gradio('interface_state'), gradio('history'))
 
     shared.gradio['load_chat_history'].upload(
         ui.gather_interface_values, gradio(shared.input_elements), gradio('interface_state')).then(
