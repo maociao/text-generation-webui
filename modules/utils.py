@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -46,7 +47,7 @@ def delete_file(fname):
         return
 
     if abs_path.exists():
-        abs_path.unlink() if abs_path.is_file() else abs_path.rmdir()
+        abs_path.unlink() if abs_path.is_file() else shutil.rmtree(abs_path)
         logger.info(f'Deleted {fname}.')
 
 

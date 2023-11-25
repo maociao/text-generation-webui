@@ -41,7 +41,7 @@ def refresh_voices_dd():
     all_voices = refresh_voices()
     return gr.Dropdown.update(value=all_voices[0], choices=all_voices)
 
-def get_voice_from_history(unique_id, character, mode):
+def get_voice_from_file(unique_id, character, mode):
     return None
 
 
@@ -172,11 +172,12 @@ def ui():
             voices = refresh_voices()
             selected = params['selected_voice']
             if selected == 'None':
-                existing_voice = get_voice_from_history(gradio('unique_id'), gradio('character_menu'), gradio('mode'))
+                existing_voice = get_voice_from_file(gradio('unique_id'), gradio('character_menu'), gradio('mode'))
                 params['selected_voice'] = existing_voice or voices[0]
             elif selected not in voices:
                 logger.error(f'Selected voice {selected} not available, switching to {voices[0]}')
                 params['selected_voice'] = voices[0]
+
         voice = gr.Dropdown(value=params['selected_voice'], choices=voices, label='TTS Voice')
         refresh = gr.Button(value='Refresh')
 
