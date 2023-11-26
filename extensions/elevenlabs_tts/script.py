@@ -41,8 +41,20 @@ def refresh_voices_dd():
     all_voices = refresh_voices()
     return gr.Dropdown.update(value=all_voices[0], choices=all_voices)
 
-def get_voice_from_file(unique_id, character, mode):
-    return None
+def get_voice_from_file(character, mode):
+
+    if mode == 'instruct':
+        return None
+
+    voice_file = Path(f'logs/chat/{character}/.11lvoice')
+
+    if voice_file.exists():
+        with open(voice_file, "rb") as f:
+            voice = f.read()
+    else:
+        voice = None
+
+    return voice
 
 
 def remove_tts_from_history(history):
@@ -76,7 +88,6 @@ def state_modifier(state):
         return state
 
     state['stream'] = False
-    state['voice'] = params['selected_voice']
     return state
 
 
@@ -115,19 +126,24 @@ def output_modifier(string, state):
         string = 'empty reply, try regenerating'
 
     history_path = state['history']['path']
-    print(f'state_history_path = {history_path}')
     output_dir = Path(history_path).parent / "outputs"
     if not output_dir.is_dir():
-        output_dir.mkdir()     
+        output_dir.mkdir()
         
-    print(f'output_dir = {output_dir}')
+    voice_file = Path(history_path).parent.parent / ".11lvoice"
+    if not voice_file.exists():
+        with open(voice_file, "w") as f:
+            f.write(params['selected_voice'])
+    else:
+        with open(voice_file, "r") as f:
+            params.update({'selected_voice': f.read()})
+                
     files = list(Path(f'{output_dir}').glob('*.mp3'))
     files.sort(key=lambda x: int(x.stem))
 
     if len(files) > 0:
         wav_idx = int(Path(files[-1]).stem) + 1
 
-    print(f'wav_idx = {wav_idx}')
     output_file = Path(f'{output_dir}/{wav_idx:06d}.mp3'.format(wav_idx))
     print(f'Outputting audio to {str(output_file)}')
     try:
@@ -172,7 +188,7 @@ def ui():
             voices = refresh_voices()
             selected = params['selected_voice']
             if selected == 'None':
-                existing_voice = get_voice_from_file(gradio('unique_id'), gradio('character_menu'), gradio('mode'))
+                existing_voice = get_voice_from_file(gradio('character_menu'), gradio('mode'))
                 params['selected_voice'] = existing_voice or voices[0]
             elif selected not in voices:
                 logger.error(f'Selected voice {selected} not available, switching to {voices[0]}')
