@@ -123,7 +123,7 @@ def output_modifier(string, state):
     string = string.replace('\n', ' ')
     string = string.strip()
     if string == '':
-        string = 'empty reply, try regenerating'
+       return original_string
 
     history_path = state['history']['path']
     output_dir = Path(history_path).parent / "outputs"
