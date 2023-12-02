@@ -2,6 +2,7 @@
 /characters
 /css
 /extensions/**/*.mp3
+/extensions/coqui_tts/**/*.wav
 /grammars
 /installer_files
 /logs
