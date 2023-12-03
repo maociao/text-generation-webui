@@ -3,6 +3,7 @@
 /css
 /extensions/**/*.mp3
 /extensions/coqui_tts/**/*.wav
+scratch.py
 /grammars
 /installer_files
 /logs

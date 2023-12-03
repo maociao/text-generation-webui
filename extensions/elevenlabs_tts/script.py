@@ -80,7 +80,7 @@ def toggle_text_in_history(history):
 def remove_surrounded_chars(string):
     # this expression matches to 'as few symbols as possible (0 upwards) between any asterisks' OR
     # 'as few symbols as possible (0 upwards) between an asterisk and the end of the string'
-    return re.sub('\*[^\*]*?(\*|$)', '', string)
+    return re.sub('(\*[^\*]*?(\*|$))|(\([^\()]*?(\)|$))', '', string)
 
 
 def state_modifier(state):

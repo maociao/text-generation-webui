@@ -1,5 +1,6 @@
 import html
 import json
+import re
 import random
 import time
 from pathlib import Path
@@ -77,9 +78,16 @@ def load_model():
     return model
 
 
-def remove_tts_from_history(history):
+def remove_tts_from_history(history, unique_id, character_menu, mode):
     for i, entry in enumerate(history['internal']):
         history['visible'][i] = [history['visible'][i][0], entry[1]]
+    
+    if mode == 'instruct':
+        return history
+
+    for path in Path(f'extensions/coqui_tts/outputs').glob(f'{character_menu}_{unique_id}_*.wav'):
+        if path.exists():
+            path.unlink()
 
     return history
 
@@ -100,6 +108,12 @@ def toggle_text_in_history(history):
 def random_sentence():
     with open(Path("extensions/coqui_tts/harvard_sentences.txt")) as f:
         return random.choice(list(f))
+
+
+def remove_surrounded_chars(string):
+    # this expression matches to 'as few symbols as possible (0 upwards) between any asterisks' OR
+    # 'as few symbols as possible (0 upwards) between an asterisk and the end of the string'
+    return re.sub('(\*[^\*]*?(\*|$))|(\([^\()]*?(\)|$))', '', string)
 
 
 def voice_preview(string):
@@ -149,21 +163,27 @@ def output_modifier(string, state):
 
     original_string = string
     string = preprocess(html.unescape(string))
+    string = remove_surrounded_chars(string)
+    string = string.replace('"', '')
+    string = string.replace('“', '')
+    string = string.replace('\n', ' ')
+    string = string.strip()
     if string == '':
-        string = '*Empty reply, try regenerating*'
-    else:
-        output_file = Path(f'extensions/coqui_tts/outputs/{state["character_menu"]}_{int(time.time())}.wav')
-        model.tts_to_file(
-            text=string,
-            file_path=output_file,
-            speaker_wav=[f"{this_dir}/voices/{params['voice']}"],
-            language=languages[params["language"]]
-        )
+       return original_string
 
-        autoplay = 'autoplay' if params['autoplay'] else ''
-        string = f'<audio src="file/{output_file.as_posix()}" controls {autoplay}></audio>'
-        if params['show_text']:
-            string += f'\n\n{original_string}'
+    unique_id = Path(state['history']['path']).parent.name
+    output_file = Path(f'extensions/coqui_tts/outputs/{state["character_menu"]}_{unique_id}_{int(time.time())}.wav')
+    model.tts_to_file(
+        text=string,
+        file_path=output_file,
+        speaker_wav=[f"{this_dir}/voices/{params['voice']}"],
+        language=languages[params["language"]]
+    )
+
+    autoplay = 'autoplay' if params['autoplay'] else ''
+    string = f'<audio src="file/{output_file.as_posix()}" controls {autoplay}></audio>'
+    if params['show_text']:
+        string += f'\n\n{original_string}'
 
     shared.processing_message = "*Is typing...*"
     return string
@@ -214,7 +234,7 @@ def ui():
     convert.click(lambda: [gr.update(visible=True), gr.update(visible=False), gr.update(visible=True)], None, convert_arr)
     convert_confirm.click(
         lambda: [gr.update(visible=False), gr.update(visible=True), gr.update(visible=False)], None, convert_arr).then(
-        remove_tts_from_history, gradio('history'), gradio('history')).then(
+        remove_tts_from_history, gradio('history', 'unique_id', 'character_menu', 'mode'), gradio('history')).then(
         chat.save_history, gradio('history', 'unique_id', 'character_menu', 'mode'), None).then(
         chat.redraw_html, gradio(ui_chat.reload_arr), gradio('display'))
 
