@@ -31,7 +31,7 @@ except ModuleNotFoundError:
 params = {
     "activate": True,
     "autoplay": True,
-    "show_text": False,
+    "show_text": True,
     "remove_trailing_dots": False,
     "voice": "female_01.wav",
     "language": "English",
@@ -74,7 +74,7 @@ Synthesizer.split_into_sentences = new_split_into_sentences
 
 
 def load_model():
-    model = TTS(params["model_name"]).to(params["device"])
+    model = TTS(params["model_name"])
     return model
 
 
