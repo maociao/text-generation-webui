@@ -21,6 +21,7 @@
 /notification.mp3
 /settings*.json
 /settings*.yaml
+scratch.py
 
 .chroma
 .DS_Store
